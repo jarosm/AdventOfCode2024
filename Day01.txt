@@ -1,0 +1,58 @@
+﻿
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+int[][] ParseInput()
+{
+	var input = File.ReadAllLines("input.txt").Select(l => l.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(x => int.Parse(x)).ToArray()).ToArray();
+
+	int[][] nums = { new int[input.Length], new int[input.Length] };
+	for (int i = 0; i < input.Length; i++)
+	{
+		nums[0][i] = input[i][0];
+		nums[1][i] = input[i][1];
+	}
+
+	return nums;
+}
+
+
+void Part1()
+{
+	var input = ParseInput();
+
+	input[0] = input[0].OrderBy(x => x).ToArray();
+	input[1] = input[1].OrderBy(x => x).ToArray();
+
+	long sum = 0;
+	for (int i = 0; i < input[0].Length; i++)
+	{
+		if (input[0][i] < input[1][i])
+			sum = sum + (input[1][i] - input[0][i]);
+		else
+			sum = sum + (input[0][i] - input[1][i]);
+	}
+
+	Console.WriteLine($"Part 1: { sum }");
+}
+
+
+void Part2()
+{
+	var input = ParseInput();
+
+	var dict = input[1].GroupBy(x => x).ToDictionary(g => g.Key, g => g.ToList());
+	long sum = 0;
+	for (int i = 0; i < input[0].Length; i++)
+	{
+		if (dict.Keys.Contains(input[0][i]))
+			sum += input[0][i] * dict[input[0][i]].Count;
+	}
+
+	Console.WriteLine($"Part 2: { sum }");
+}
