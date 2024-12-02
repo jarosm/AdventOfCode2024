@@ -1,0 +1,76 @@
+﻿
+using System.Diagnostics.CodeAnalysis;
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+int[][] ParseInput()
+{
+	var input = File.ReadAllLines("input.txt").Select(x => x.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(x => int.Parse(x)).ToArray()).ToArray();
+
+	return input;
+}
+
+
+void Part1()
+{
+	var input = ParseInput();
+
+	int sum = 0;
+	for (int r = 0; r < input.Length; r++)
+	{
+		if (CheckItems(input[r]))
+			sum++;
+	}
+
+	Console.WriteLine($"Part 1: {sum}");
+}
+
+
+void Part2()
+{
+	var input = ParseInput();
+
+	int sum = 0;
+	for (int r = 0; r < input.Length; r++)
+	{
+		if (CheckItems(input[r], true))
+			sum++;
+	}
+
+	Console.WriteLine($"Part 2: {sum}");
+}
+
+
+bool CheckItems(int[] arr, bool dampen = false)
+{
+	int dir = arr[1] > arr[0] ? 1 : -1;
+
+	for (int i = 1; i < arr.Length; i++)
+	{
+		int dif = (arr[i] - arr[i - 1]) * dir;
+		if (dif < 1 || dif > 3)
+		{
+			if (dampen)
+			{
+				var arr1 = arr[0..i].Concat(arr[(i+1)..arr.Length]).ToArray();
+				var arr2 = arr[0..(i - 1)].Concat(arr[i..arr.Length]).ToArray();
+				if (i > 1)
+				{
+					var arr3 = arr[0..(i - 2)].Concat(arr[(i - 1)..arr.Length]).ToArray();
+					return CheckItems(arr1) || CheckItems(arr2) || CheckItems(arr3);
+				}
+				return CheckItems(arr1) || CheckItems(arr2);
+			}
+			else
+				return false;
+		}
+	}
+
+	return true;
+}
