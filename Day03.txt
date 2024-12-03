@@ -1,0 +1,78 @@
+﻿
+using System.Text.RegularExpressions;
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+string[] ParseInput()
+{
+	var input = File.ReadAllLines("input.txt");
+
+	return input;
+}
+
+
+void Part1()
+{
+	var input = ParseInput();
+
+	long sum = Mul(input);
+
+	Console.WriteLine($"Part 1: {sum}");
+}
+
+
+void Part2()
+{
+	var input = ParseInput();
+
+	long sum = Mul(input, true);
+
+	Console.WriteLine($"Part 2: {sum}");
+}
+
+
+long Mul(string[] input, bool enablers = false)
+{
+	long sum = 0;
+	List<Match> matches = new List<Match>();
+
+	for (int i = 0; i < input.Length; i++)
+	{
+		if (enablers)
+			matches.AddRange(Regex.Matches(input[i], @"mul\([0-9]{1,3},[0-9]{1,3}\)|do\(\)|don't\(\)"));
+		else
+			matches.AddRange(Regex.Matches(input[i], @"mul\([0-9]{1,3},[0-9]{1,3}\)"));
+	}
+
+	bool enabled = true;
+	foreach (Match match in matches)
+	{
+		if (enablers)
+		{
+			if (match.Value.StartsWith("don't"))
+			{
+				enabled = false;
+				continue;
+			}
+			else if (match.Value.StartsWith("do"))
+			{
+				enabled = true;
+				continue;
+			}
+		}
+
+		if (!enabled)
+			continue;
+
+		string[] t = match.Value.Replace("mul(", "").Replace(")", "").Split(',');
+		sum += int.Parse(t[0]) * int.Parse(t[1]);
+	}
+
+	return sum;
+}
