@@ -1,0 +1,94 @@
+﻿
+using System.Data;
+using System.Text.RegularExpressions;
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+string[] ParseInput()
+{
+	var input = File.ReadAllLines("input.txt");
+
+	return input;
+}
+
+
+void Part1()
+{
+	var input = ParseInput();
+
+	int sum = 0;
+	for (int i = 0; i < input.Length; i++)
+	{
+		sum += Regex.Matches(input[i], @"XMAS").Count();
+		sum += Regex.Matches(input[i], @"SAMX").Count();
+		if (i <= input.Length - 4)
+		{
+			for (int j = 0; j < input[i].Length; j++)
+			{
+				if (input[i][j] == 'X')
+					sum += CheckXMAS(input, i, j, "XMAS");
+				else if (input[i][j] == 'S')
+					sum += CheckXMAS(input, i, j, "SAMX");
+			}
+		}
+	}
+
+	Console.WriteLine($"Part 1: {sum}");
+}
+
+
+void Part2()
+{
+	var input = ParseInput();
+
+	int sum = 0;
+	for (int i = 1; i < input.Length - 1; i++)
+	{
+		for (int j = 1; j < input[i].Length - 1; j++)
+		{
+			if (input[i][j] == 'A' && CheckMAS(input, i, j))
+				sum++;
+		}
+	}
+
+	Console.WriteLine($"Part 2: {sum}");
+}
+
+
+int CheckXMAS(string[] arr, int row, int col, string text)
+{
+	int sum = 0;
+
+	if (col >= 3 && arr[row + 1][col - 1] == text[1] && arr[row + 2][col - 2] == text[2] && arr[row + 3][col - 3] == text[3])
+		sum++;
+
+	if (col <= arr[0].Length - 4 && arr[row + 1][col + 1] == text[1] && arr[row + 2][col + 2] == text[2] && arr[row + 3][col + 3] == text[3])
+		sum++;
+
+	if (arr[row + 1][col] == text[1] && arr[row + 2][col] == text[2] && arr[row + 3][col] == text[3])
+		sum++;
+
+	return sum;
+}
+
+
+bool CheckMAS(string[] arr, int row, int col)
+{
+	if 
+	(
+		((arr[row - 1][col - 1] == 'M' && arr[row + 1][col + 1] == 'S') || (arr[row - 1][col - 1] == 'S' && arr[row + 1][col + 1] == 'M'))
+		&&
+		((arr[row + 1][col - 1] == 'M' && arr[row - 1][col + 1] == 'S') || (arr[row + 1][col - 1] == 'S' && arr[row - 1][col + 1] == 'M'))
+	)
+	{
+		return true;
+	}
+
+	return false;
+}
