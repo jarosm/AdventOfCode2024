@@ -1,0 +1,83 @@
+﻿
+Dictionary<int, int[]> rules = [];
+int[][] updates;
+
+ParseInput();
+
+var (part1, part2) = Process();
+
+Console.WriteLine($"Part 1: {part1}");
+Console.WriteLine($"Part 1: {part2}");
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+void ParseInput()
+{
+	var input = File.ReadAllLines("input.txt");
+
+	rules = input.Where(x => x.Contains('|')).Select(x => x.Split('|').Select(x => int.Parse(x)).ToArray()).GroupBy(x => x[0]).ToDictionary(g => g.Key, g => g.Select(x => x[1]).ToArray());
+
+	updates = input.Where(x => x.Contains(',')).Select(x => x.Split(',').Select(x => int.Parse(x)).ToArray()).ToArray();
+}
+
+
+(int part1, int part2) Process()
+{
+	int sum1 = 0, sum2 = 0;
+
+	for (int i = 0; i < updates.Length; i++)
+	{
+		List<int> before = [updates[i][0]];
+		bool right = true;
+		for (int j = 1; j < updates[i].Length; j++)
+		{
+			if (rules.ContainsKey(updates[i][j]) && before.Intersect(rules[updates[i][j]]).Any())
+			{
+				right = false;
+
+				sum2 += FixUpdate(i);
+
+				break;
+			}
+			before.Add(updates[i][j]);
+		}
+		if (right)
+			sum1 += updates[i][updates[i].Length / 2];
+	}
+
+	return (sum1, sum2);
+}
+
+
+int FixUpdate(int index)
+{
+	var temp = updates[index].ToList();
+
+	while (true)
+	{
+		List<int> before = [temp[0]];
+		bool right = true;
+
+		for (int i = 1; i < temp.Count; i++)
+		{
+			if (rules.ContainsKey(temp[i]))
+			{
+				var intersect = before.Intersect(rules[temp[i]]);
+				if (intersect.Any())
+				{
+					right = false;
+					int ind = temp.IndexOf(intersect.First());
+					temp.Insert(ind, temp[i]);
+					temp.RemoveAt(i + 1);
+					break;
+				}
+			}
+			before.Add(temp[i]);
+		}
+
+		if (right)
+			return temp[temp.Count / 2];
+	}
+}
