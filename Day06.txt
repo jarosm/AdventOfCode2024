@@ -1,0 +1,107 @@
+﻿
+char[][] map;
+(int dirR, int dirC)[] dirs = { (-1, 0), (0, 1), (1, 0), (0, -1) };
+(int posR, int posC, int dir) guardStartPosition = (0, 0, 0);
+
+ParseInput();
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+void ParseInput()
+{
+	var input = File.ReadAllLines("input.txt");
+
+	for (int r = 0; r < input.Length; r++)
+	{
+		int c = input[r].IndexOf('^');
+		if (c != -1)
+		{
+			guardStartPosition = (r, c, 0);
+			break;
+		}
+	}
+
+	map = input.Select(x => x.ToCharArray()).ToArray();
+	map[guardStartPosition.posR][guardStartPosition.posC] = '.';
+}
+
+
+void Part1()
+{
+	List<(int, int)> visited = [];
+	var guard = guardStartPosition;
+
+	while (true)
+	{
+		(int posR, int posC) next = (guard.posR + dirs[guard.dir].dirR, guard.posC + dirs[guard.dir].dirC);
+
+		if (next.posR < 0 || next.posR >= map.Length || next.posC < 0 || next.posC >= map.Length)
+		{
+			visited.Add((guard.posR, guard.posC));
+			break;
+		}
+
+		if (map[next.posR][next.posC] == '#') // turn
+			guard = (guard.posR, guard.posC, (guard.dir + 1) % 4);
+		else // step
+		{
+			visited.Add((guard.posR, guard.posC));
+			guard = (next.posR, next.posC, guard.dir);
+		}
+	}
+
+	Console.WriteLine($"Part 1: {visited.Distinct().Count()}");
+}
+
+
+void Part2()
+{
+	int variants = 0;
+	for (int r = 0; r < map.Length; r++)
+	{
+		for (int c = 0; c < map[0].Length; c++)
+		{
+			if (map[r][c] == '#' || (r == guardStartPosition.posR && c == guardStartPosition.posC))
+				continue;
+
+			map[r][c] = '#'; // place obstacle
+			if (CheckLoop())
+				variants++;
+			map[r][c] = '.'; // reset
+		}
+	}
+
+	Console.WriteLine($"Part 2: {variants}");
+}
+
+
+bool CheckLoop()
+{
+	HashSet<(int r, int c, int d)> visited = [];
+	var guard = guardStartPosition;
+	while (true)
+	{
+		(int posR, int posC) next = (guard.posR + dirs[guard.dir].dirR, guard.posC + dirs[guard.dir].dirC);
+
+		if (next.posR < 0 || next.posR >= map.Length || next.posC < 0 || next.posC >= map.Length) // out of bounds
+		{
+			return false;
+		}
+
+		if (map[next.posR][next.posC] == '#') // turn
+			guard = (guard.posR, guard.posC, (guard.dir + 1) % 4);
+		else if (visited.Contains((guard.posR, guard.posC, guard.dir))) //loop
+			return true;
+		else // step
+		{
+			visited.Add((guard.posR, guard.posC, guard.dir));
+			guard = (next.posR, next.posC, guard.dir);
+		}
+	}
+}
