@@ -1,0 +1,60 @@
+﻿
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+string[][] ParseInput()
+{
+	var input = File.ReadAllLines("input.txt").Select(x => x.Split(':').ToArray()).ToArray();
+
+	return input;
+}
+
+
+void Part1()
+{
+	var input = ParseInput();
+
+	ulong sum = 0;
+	for (int i = 0; i < input.Length; i++)
+	{
+		ulong total = ulong.Parse(input[i][0]);
+		ulong[] vals = input[i][1].Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(x => ulong.Parse(x)).ToArray();
+		if (TestEquation(vals, 1, total, vals[0], false))
+			sum += total;
+	}
+
+	Console.WriteLine($"Part 1: {sum}");
+}
+
+
+void Part2()
+{
+	var input = ParseInput();
+
+	ulong sum = 0;
+	for (int i = 0; i < input.Length; i++)
+	{
+		ulong total = ulong.Parse(input[i][0]);
+		ulong[] vals = input[i][1].Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(x => ulong.Parse(x)).ToArray();
+		if (TestEquation(vals, 1, total, vals[0], true))
+			sum += total;
+	}
+
+	Console.WriteLine($"Part 2: {sum}");
+}
+
+
+bool TestEquation(ulong[] arr, int index, ulong total, ulong current, bool part2)
+{
+	if (index == arr.Length)
+		return total == current;
+
+	return TestEquation(arr, index + 1, total, current + arr[index], part2)
+		|| TestEquation(arr, index + 1, total, current * arr[index], part2)
+		|| (part2 ? TestEquation(arr, index + 1, total, ulong.Parse(current.ToString() + arr[index].ToString()), part2) : false);
+}
