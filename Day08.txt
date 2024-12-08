@@ -1,0 +1,113 @@
+﻿
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+string[] ParseInput()
+{
+	var input = File.ReadAllLines("input.txt");
+
+	return input;
+}
+
+
+void Part1()
+{
+	var input = ParseInput();
+
+	HashSet<(int y, int x)> nodes = [];
+	Dictionary<char, List<(int y, int x)>> antennas = [];
+	int maxX = input[0].Length, maxY = input.Length;
+
+	for (int y = 0; y < maxY; y++)
+	{
+		for (int x = 0; x < maxX; x++)
+		{
+			if (input[y][x] == '.')
+				continue;
+
+			if (antennas.TryGetValue(input[y][x], out List<(int y, int x)>? a))
+			{
+				for (int i = 0; i < a.Count; i++)
+				{
+					// down from bottom antenna
+					int dy = y - a[i].y, dx = x - a[i].x;
+					if (y + dy >= 0 && y + dy < maxY && x + dx >= 0 && x + dx < maxX)
+						nodes.Add((y + dy, x + dx));
+
+					// up from top antenna
+					dy = -1 * dy;
+					dx = -1 * dx;
+					if (a[i].y + dy >= 0 && a[i].y + dy < maxY && a[i].x + dx >= 0 && a[i].x + dx < maxX)
+						nodes.Add((a[i].y + dy, a[i].x + dx));
+				}
+
+				a.Add((y, x));
+			}
+			else
+				antennas[input[y][x]] = [ (y, x) ];
+		}
+	}
+
+	Console.WriteLine($"Part 1: {nodes.Distinct().Count()}");
+}
+
+
+void Part2()
+{
+	var input = ParseInput();
+
+	HashSet<(int y, int x)> nodes = [];
+	Dictionary<char, List<(int y, int x)>> antennas = [];
+	int maxX = input[0].Length, maxY = input.Length;
+
+	for (int y = 0; y < maxY; y++)
+	{
+		for (int x = 0; x < maxX; x++)
+		{
+			if (input[y][x] == '.')
+				continue;
+
+			if (antennas.TryGetValue(input[y][x], out List<(int y, int x)>? a))
+			{
+				for (int i = 0; i < a.Count; i++)
+				{
+					// down from bottom antenna
+					int dy = y - a[i].y, dx = x - a[i].x;
+					int ny = y + dy, nx = x + dx;
+					while (ny >= 0 && ny < maxY && nx >= 0 && nx < maxX)
+					{
+						nodes.Add((ny, nx));
+						ny = ny + dy;
+						nx = nx + dx;
+					}
+
+					// up from bottom antenna
+					dy = -1 * dy;
+					dx = -1 * dx;
+					ny = y + dy;
+					nx = x + dx;
+					while (ny >= 0 && ny < maxY && nx >= 0 && nx < maxX)
+					{
+						nodes.Add((ny, nx));
+						ny = ny + dy;
+						nx = nx + dx;
+					}
+
+					// add bottom antenna, because it's node too
+					nodes.Add((y, x));
+				}
+
+				a.Add((y, x));
+			}
+			else
+				antennas[input[y][x]] = [(y, x)];
+		}
+	}
+
+	Console.WriteLine($"Part 2: {nodes.Distinct().Count()}");
+}
