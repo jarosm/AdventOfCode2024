@@ -1,0 +1,117 @@
+﻿
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+int[] ParseInput()
+{
+	var input = File.ReadAllLines("input.txt")[0].ToCharArray().Select(x => int.Parse(x.ToString())).ToArray();
+
+	return input;
+}
+
+
+void Part1()
+{
+	var input = ParseInput();
+
+	int index1 = 0;
+	int index2 = input.Length % 2 == 0 ? input.Length - 2 : input.Length - 1; // We start with file, so check if we end with space or file
+	int blockPos = 0, filePosFromStart = 0, fileposFromEnd = (input.Length - 1) / 2;
+	bool freeSpace = false;
+	ulong checksum = 0;
+
+	while (index1 <= index2)
+	{
+		if (!freeSpace) // File
+		{
+			for (int i = 0; i < input[index1]; i++)
+			{
+				checksum += (ulong)blockPos * (ulong)filePosFromStart;
+				blockPos++;
+			}
+			filePosFromStart++;
+		}
+		else
+		{
+			for (int i = 0; i < input[index1]; i++)
+			{
+				checksum += (ulong)blockPos * (ulong)fileposFromEnd;
+				blockPos++;
+
+				input[index2]--;
+				if (input[index2] == 0)
+				{
+					index2 -= 2;
+					fileposFromEnd--;
+				}
+			}
+		}
+
+		freeSpace = !freeSpace;
+		index1++;
+	}
+
+	Console.WriteLine($"Part 1: {checksum}");
+}
+
+
+void Part2()
+{
+	var input = ParseInput();
+
+	List<(int start, int length)> files = [];
+	List<(int start, int length)> spaces = [];
+	int pos = 0;
+	for (int i = 0; i < input.Length; i++)
+	{
+		if (i % 2 == 0) // file
+		{
+			files.Add((pos, input[i]));
+			pos += input[i];
+		}
+		else // space
+		{
+			spaces.Add((pos, input[i]));
+			pos += input[i];
+		}
+	}
+
+	ulong checksum = 0;
+	for (int i = files.Count - 1; i >= 0; i--)
+	{
+		// Try to find first free space left from file
+		int index = spaces.FindIndex(x => x.start < files[i].start && x.length >= files[i].length);
+
+		if (index >= 0) // found
+		{
+			pos = spaces[index].start;
+			for (int j = 0; j < files[i].length; j++)
+			{
+				checksum += (ulong)pos * (ulong)i;
+				pos++;
+			}
+
+			// Change or remove space
+			if (spaces[index].length > files[i].length)
+				spaces[index] = (pos, spaces[index].length - files[i].length);
+			else
+				spaces.RemoveAt(index);
+		}
+		else // not found
+		{
+			pos = files[i].start;
+			for (int j = 0; j < files[i].length; j++)
+			{
+				checksum += (ulong)pos * (ulong)i;
+				pos++;
+			}
+		}
+	}
+
+	Console.WriteLine($"Part 2: {checksum}");
+}
