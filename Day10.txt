@@ -1,0 +1,166 @@
+﻿
+Dictionary<(int r, int c), Visited> visited = [] ;
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+int[][] ParseInput()
+{
+	var input = File.ReadAllLines("input.txt").Select(x => x.ToCharArray().Select(x => int.Parse(x.ToString())).ToArray()).ToArray();
+
+	return input;
+}
+
+
+void Part1()
+{
+	var input = ParseInput();
+
+	int sum = 0;
+
+	for (int r = 0; r < input.Length; r++)
+	{
+		for (int c = 0; c < input[r].Length; c++)
+		{
+			if (input[r][c] == 0)
+			{
+				ProcessTrail1(input, new Point() { row = r, col = c });
+
+				sum += visited[(r, c)].trailends.Distinct().Count();
+			}
+		}
+	}
+
+	Console.WriteLine($"Part 1: {sum}");
+}
+
+
+void Part2()
+{
+	var input = ParseInput();
+
+	int sum = 0;
+
+	for (int r = 0; r < input.Length; r++)
+	{
+		for (int c = 0; c < input[r].Length; c++)
+		{
+			if (input[r][c] == 0)
+			{
+				
+
+				sum += ProcessTrail2(input, new Point() { row = r, col = c });
+			}
+		}
+	}
+
+	Console.WriteLine($"Part 2: {sum}");
+}
+
+
+void ProcessTrail1(int[][] map, Point start)
+{
+	Point[] dirs = { new Point { row = 1, col = 0 }, new Point { row = 0, col = 1 }, new Point { row = -1, col = 0 }, new Point { row = 0, col = -1 } };
+	Queue<(Point curr, Point? prev)> queue = [];
+
+	queue.Enqueue((start, null));
+	while (queue.Count > 0)
+	{
+		var q = queue.Dequeue();
+
+		if (visited.TryGetValue((q.curr.row, q.curr.col), out Visited v)) // we visited this point
+		{
+			v.predecesors.Add(q.prev);
+			UpdateTrailFromMiddle(q.prev, v);
+			continue;
+		}
+
+		if (map[q.curr.row][q.curr.col] == 9) // end of trail
+		{
+			visited.Add((q.curr.row, q.curr.col), new Visited() { trailends = [(q.curr.row, q.curr.col)], predecesors = [q.prev] });
+			UpdateTrailFromEnd(q.prev, q.curr);
+			continue;
+		}
+
+		visited.Add((q.curr.row, q.curr.col), new Visited() { predecesors = q.prev != null ? [q.prev] : [] });
+
+		foreach (var d in dirs)
+		{
+			if (q.curr.row + d.row < 0 || q.curr.row + d.row >= map.Length || q.curr.col + d.col < 0 || q.curr.col + d.col >= map[0].Length) // out of bounds
+				continue;
+			if (map[q.curr.row][q.curr.col] + 1 != map[q.curr.row + d.row][q.curr.col + d.col]) // slope check
+				continue;
+			queue.Enqueue((new Point() { row = q.curr.row + d.row, col = q.curr.col + d.col }, q.curr));
+		}
+	}
+}
+
+void UpdateTrailFromEnd(Point prev, Point end)
+{
+	if (visited.TryGetValue((prev.row, prev.col), out Visited v))
+	{
+		v.trailends.Add((end.row, end.col));
+		foreach (var p in v.predecesors)
+			UpdateTrailFromEnd(p, end);
+	}
+}
+
+void UpdateTrailFromMiddle(Point prev, Visited curr)
+{
+	if (visited.TryGetValue((prev.row, prev.col), out Visited v))
+	{
+		v.trailends.AddRange(curr.trailends);
+		foreach (var p in v.predecesors)
+			UpdateTrailFromMiddle(p, v);
+	}
+}
+
+
+int ProcessTrail2(int[][] map, Point start)
+{
+	int count = 0;
+	Point[] dirs = { new Point { row = 1, col = 0 }, new Point { row = 0, col = 1 }, new Point { row = -1, col = 0 }, new Point { row = 0, col = -1 } };
+	Queue<Point> queue = [];
+
+	queue.Enqueue(start);
+	while (queue.Count > 0)
+	{
+		var q = queue.Dequeue();
+
+		if (map[q.row][q.col] == 9) // end of trail
+		{
+			count++;
+			continue;
+		}
+
+		foreach (var d in dirs)
+		{
+			if (q.row + d.row < 0 || q.row + d.row >= map.Length || q.col + d.col < 0 || q.col + d.col >= map[0].Length) // out of bounds
+				continue;
+			if (map[q.row][q.col] + 1 != map[q.row + d.row][q.col + d.col]) // slope check
+				continue;
+			queue.Enqueue(new Point() { row = q.row + d.row, col = q.col + d.col });
+		}
+	}
+
+	return count;
+}
+
+
+class Point
+{
+	public int row;
+	public int col;
+}
+
+
+class Visited
+{
+	public List<(int row, int col)> trailends = [];
+	public List<Point> predecesors = [];
+}
