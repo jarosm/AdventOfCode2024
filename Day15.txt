@@ -1,0 +1,167 @@
+﻿
+char[][] map = [];
+Dictionary<List<(int x, int y)>, char> obstacles = [];
+
+
+(int x, int y) botPos = (0, 0);
+string moves = "";
+Dictionary<char, (int dx, int dy)> dirs = new() { ['<'] = (-1, 0), ['>'] = (1, 0), ['^'] = (0, -1), ['v'] = (0, 1) };
+
+ParseInput1();
+
+Part1();
+
+ParseInput2();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+void ParseInput1()
+{
+	var input = File.ReadAllLines("input.txt");
+
+	int i = 0;
+	List<char[]> temp = [];
+	while (input[i].Length > 0)
+	{
+		temp.Add(input[i].ToCharArray());
+		int pos = input[i].IndexOf('@');
+		if (pos != -1)
+			botPos = (pos, i);
+		i++;
+	}
+	map = temp.ToArray();
+	i++;
+	while (i < input.Length)
+	{
+		moves += input[i];
+		i++;
+	}
+}
+
+void ParseInput2()
+{
+	var input = File.ReadAllLines("input.txt");
+	int y = 0;
+	while (input[y].Length > 0)
+	{
+		for (int x = 0; x < input[y].Length; x++)
+		{
+			switch (input[y][x])
+			{
+				case '#':
+					obstacles[[(2 * x, y)]] = '#';
+					obstacles[[(2 * x + 1, y)]] = '#';
+					break;
+				case 'O':
+					obstacles[[(2 * x, y), (2 * x + 1, y)]] = 'O';
+					break;
+				case '@':
+					botPos = (2 * x, y);
+					break;
+			}
+		}
+		y++;
+	}
+	y++;
+	moves = "";
+	while (y < input.Length)
+	{
+		moves += input[y];
+		y++;
+	}
+}
+
+
+void Part1()
+{
+	for (int i = 0; i < moves.Length; i++)
+	{
+		MoveBot1(moves[i]);
+	}
+
+	long sum = 0;
+	for (int y = 0; y < map.Length; y++)
+	{
+		for (int x = 0; x < map[y].Length; x++)
+		{
+			if (map[y][x] == 'O')
+				sum += 100 * y + x;
+		}
+	}
+
+	Console.WriteLine($"Part 1: {sum}");
+}
+
+
+void Part2()
+{
+	for (int i = 0; i < moves.Length; i++)
+	{
+		var dir = dirs[moves[i]];
+		List<List<(int x, int y)>> allObjs = [];
+
+		if (!TryGetOccupied((botPos.x + dir.dx, botPos.y + dir.dy), out List<(int x, int y)>? key))
+			botPos = (botPos.x + dir.dx, botPos.y + dir.dy);
+		else if (obstacles[key] == '#')
+			continue;
+		else if (Move(dir, key, allObjs))
+		{
+			botPos = (botPos.x + dir.dx, botPos.y + dir.dy);
+			foreach (var item in allObjs)
+				obstacles.Remove(item);
+			allObjs = [.. allObjs.Select(x => x.Select(y => (y.x + dir.dx, y.y + dir.dy)).ToList())];
+			foreach (var item in allObjs)
+				obstacles[item] = 'O';
+		}
+	}
+
+	Console.WriteLine($"Part 2: {obstacles.Where(x => x.Value == 'O').Select(x => x.Key[0].x + (100 * x.Key[0].y)).Sum()}");
+}
+
+
+void MoveBot1(char move)
+{
+	var dir = dirs[move];
+
+	// Find space or edge
+	(int x, int y) pos = (botPos.x + dir.dx, botPos.y + dir.dy);
+	while (map[pos.y][pos.x] != '#' && map[pos.y][pos.x] != '.')
+		pos = (pos.x + dir.dx, pos.y + dir.dy);
+
+	// Space? Then move (possible) boxes and then move bot
+	if (map[pos.y][pos.x] == '.')
+	{
+		map[pos.y][pos.x] = 'O';
+		map[botPos.y][botPos.x] = '.';
+		botPos = (botPos.x + dir.dx, botPos.y + dir.dy);
+		map[botPos.y][botPos.x] = '@';
+	}
+}
+
+bool TryGetOccupied((int x, int y) tile, out List<(int x, int y)>? key)
+{
+	key = obstacles.Keys.FirstOrDefault(x => x.Contains(tile));
+	return key != null;
+}
+
+bool Move((int dx, int dy) dir, List<(int x, int y)> obj, List<List<(int x, int y)>> all)
+{
+	all.Add(obj);
+	foreach (var item in obj)
+	{
+		if (TryGetOccupied((item.x + dir.dx, item.y + dir.dy), out var objs))
+		{
+			if (all.Contains(objs))
+				continue;
+			else if (obstacles[objs] == '#')
+				return false;
+			else if (!Move(dir, objs, all))
+				return false;
+		}
+	}
+	return true;
+}
