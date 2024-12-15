@@ -1,0 +1,72 @@
+﻿
+using System.Numerics;
+using System.Text.RegularExpressions;
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+string[] ParseInput()
+{
+	var input = File.ReadAllLines("input.txt").Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
+
+	return input;
+}
+
+
+void Part1()
+{
+	var input = ParseInput();	
+
+	Console.WriteLine($"Part 1: {Process(input)}");
+}
+
+
+void Part2()
+{
+	var input = ParseInput();
+
+	Console.WriteLine($"Part 2: {Process(input, true)}");
+}
+
+
+Vector2 Match(Regex regex, string line)
+{
+	var g = regex.Match(line).Groups;
+	return new(int.Parse(g[1].Value), int.Parse(g[2].Value));
+}
+
+
+long Process(string[] input, bool part2 = false)
+{
+	long sum = 0;
+
+	var regexButton = new Regex(@"Button (?:A|B): X\+(\d+), Y\+(\d+)");
+	var regexPrize = new Regex(@"Prize: X=(\d+), Y=(\d+)");
+
+	for (int i = 0; i < input.Length; i += 3)
+	{
+		Vector2 a = Match(regexButton, input[i]);
+		Vector2 b = Match(regexButton, input[i + 1]);
+
+		var pr = Match(regexPrize, input[i + 2]);
+		long[] p = [(long)pr.X, (long)pr.Y];
+
+		p[0] = part2 ? p[0] + 10000000000000 : p[0];
+		p[1] = part2 ? p[1] + 10000000000000 : p[1];
+
+		double y = (p[1] * (double)a.X - p[0] * (double)a.Y) / (b.Y * (double)a.X - b.X * (double)a.Y);
+		double x = (p[0] - y * b.X) / a.X;
+
+		if (x % 1 != 0 || y % 1 != 0) // Not an int
+			continue;
+
+		sum += (long)x * 3 + (long)y;
+	}
+
+	return sum;
+}
