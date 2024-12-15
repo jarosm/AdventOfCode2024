@@ -1,0 +1,79 @@
+﻿
+Dictionary<ulong, ulong> stones = [];
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+ulong ParseInput()
+{
+	ulong total = 0;
+	stones = [];
+
+	File.ReadAllLines("input.txt")[0].Split(' ').Select(ulong.Parse).ToList().ForEach(x => ProcessStone(x, 1, ref total));
+
+	return total;
+}
+
+
+void Part1()
+{
+	var total = ParseInput();
+
+	total = Process(25);
+
+	Console.WriteLine($"Part 1: {total}");
+}
+
+
+void Part2()
+{
+	var total = ParseInput();
+
+	total = Process(75);
+
+	Console.WriteLine($"Part 2: {total}");
+}
+
+
+
+void ProcessStone(ulong stoneNum, ulong toAdd, ref ulong total)
+{
+	stones.TryGetValue(stoneNum, out ulong amount);
+	stones[stoneNum] = amount + toAdd;
+	total += toAdd;
+}
+
+
+ulong Process(int max)
+{
+	ulong total = 0;
+
+	for (int i = 0; i < max; i++)
+	{
+		total = 0;
+		var list = stones.ToList();
+		stones.Clear();
+		foreach (var stone in list)
+		{
+			if (stone.Key == 0)
+				ProcessStone(1, stone.Value, ref total);
+			else if (Math.Floor(Math.Log10(stone.Key) + 1) % 2 == 0) // If digits are an even number, split the number
+			{   
+				ulong tens = (ulong)Math.Pow(10,(int)Math.Floor(Math.Log10(stone.Key) + 1) / 2);
+				var left = stone.Key / tens;
+				var right = stone.Key % tens;
+				ProcessStone(left, stone.Value, ref total);
+				ProcessStone(right, stone.Value, ref total);
+			}
+			else
+				ProcessStone(stone.Key * 2024, stone.Value, ref total);
+		}
+	}
+
+	return total;
+}
