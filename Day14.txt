@@ -1,0 +1,110 @@
+﻿
+using System.Numerics;
+using System.Text.RegularExpressions;
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+List<(Vector2 p, Vector2 v)> ParseInput()
+{
+	var input = File.ReadAllLines("input.txt");
+
+	var regex = new Regex(@"p=(\d+),(\d+)\sv=(-?\d+),(-?\d+)");
+	List<(Vector2 p, Vector2 v)> bots = [];
+
+	for (int i = 0; i < input.Length; i++)
+	{
+		var g = regex.Match(input[i]).Groups;
+		bots.Add((new(float.Parse(g[1].Value), float.Parse(g[2].Value)), new(float.Parse(g[3].Value), float.Parse(g[4].Value))));
+	}
+
+	return bots;
+}
+
+
+void Part1()
+{
+	var bots = ParseInput();
+
+	//int maxX = 11, maxY = 7; // Test
+	int maxX = 101, maxY = 103; // Puzzle
+
+	for (int i = 0; i < bots.Count; i++)
+	{
+		var bot = bots[i];
+
+		int newX = (int)bot.p.X + 100 * (int)bot.v.X;
+		if (newX < 0)
+			newX = (maxX + newX % maxX) % maxX;
+		else
+			newX %= maxX;
+
+		int newY = (int)bot.p.Y + 100 * (int)bot.v.Y;
+		if (newY < 0)
+			newY = (maxY + newY % maxY) % maxY;
+		else
+			newY %= maxY;
+
+		bots[i] = new(new(newX, newY), bot.v);
+	}
+
+	long sum = bots.Where(x => x.p.X < maxX / 2 && x.p.Y < maxY / 2).Count()
+		* bots.Where(x => x.p.X < maxX / 2 && x.p.Y > maxY / 2).Count()
+		* bots.Where(x => x.p.X > maxX / 2 && x.p.Y > maxY / 2).Count()
+		* bots.Where(x => x.p.X > maxX / 2 && x.p.Y < maxY / 2).Count();
+
+	Console.WriteLine($"Part 1: {sum}");
+}
+
+
+void Part2()
+{
+	var bots = ParseInput();
+
+	int maxX = 101, maxY = 103; // Puzzle
+	List<float> distances = [];
+
+	int count = 0;
+	while (true)
+	{
+		distances.Clear();
+		for (int i = 0; i < bots.Count - 1; i++)
+		{
+			for (int j = i + 1; j < bots.Count; j++)
+			{
+				distances.Add(Vector2.Distance(bots[i].p, bots[j].p));
+			}
+		}
+
+		if (distances.Average() < 32)
+			break;
+
+		for (int i = 0; i < bots.Count; i++)
+		{
+			var bot = bots[i];
+
+			int newX = (int)bot.p.X + (int)bot.v.X;
+			if (newX < 0)
+				newX = (maxX + newX % maxX) % maxX;
+			else
+				newX %= maxX;
+
+			int newY = (int)bot.p.Y + (int)bot.v.Y;
+			if (newY < 0)
+				newY = (maxY + newY % maxY) % maxY;
+			else
+				newY %= maxY;
+
+			bots[i] = new(new(newX, newY), bot.v);
+		}
+
+		count++;
+	}
+
+	Console.WriteLine($"Part 2: {count}");
+}
