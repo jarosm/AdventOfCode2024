@@ -1,0 +1,150 @@
+﻿
+int[] regs = [0,0,0];
+int[] prog = [];
+
+ParseInput();
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+void ParseInput()
+{
+	var input = File.ReadAllLines("input.txt");
+
+	regs[0] = int.Parse(input[0].Replace("Register A: ", ""));
+	regs[1] = int.Parse(input[1].Replace("Register B: ", ""));
+	regs[2] = int.Parse(input[2].Replace("Register C: ", ""));
+	prog = input[4].Replace("Program: ", "").Split(',').Select(int.Parse).ToArray();
+}
+
+
+void Part1()
+{
+	List<int> output = [];
+	int index = 0;
+	while (index < prog.Length)
+	{
+		switch (prog[index])
+		{
+			case 0: // adv
+				regs[0] = regs[0] / (int)Math.Pow(2, GetComboValue(prog[index + 1]));
+				index += 2;
+				break;
+			case 1: // bxl
+				regs[1] = regs[1] ^ prog[index + 1];
+				index += 2;
+				break;
+			case 2: // bst
+				regs[1] = GetComboValue(prog[index + 1]) % 8;
+				index += 2;
+				break;
+			case 3: // jnz
+				if (regs[0] == 0)
+					index += 2;
+				else
+					index = prog[index + 1];
+				break;
+			case 4: // bxc
+				regs[1] = regs[1] ^ regs[2];
+				index += 2;
+				break;
+			case 5: // out
+				output.Add(GetComboValue(prog[index + 1]) % 8);
+				index += 2;
+				break;
+			case 6: // bdv
+				regs[1] = regs[0] / (int)Math.Pow(2, GetComboValue(prog[index + 1]));
+				index += 2;
+				break;
+			case 7: // cdv
+				regs[2] = regs[0] / (int)Math.Pow(2, GetComboValue(prog[index + 1]));
+				index += 2;
+				break;
+		}
+	}
+
+	Console.WriteLine($"Part 1: {string.Join(',', output)}");
+}
+
+
+void Part2()
+{
+	// Reverse engineered test: 0,3,5,4,3,0
+	// A = A >> 3 ; out(A % 8) ; jnz(A)
+	//int A = GetAForTest();
+
+	// Reverse engineered input: 2,4, 1,2, 7,5, 4,5, 1,3, 5,5, 0,3, 3,0
+	// B = A % 8 ; B = B ^ 2 ; C = A / 2^B ; B = B ^ C ; B = B ^ 3 ; out(B % 8) ; A = A / 8 ; jnz(A)
+	long A = GetAForInput();
+
+
+	Console.WriteLine($"Part 2: {A}");
+}
+
+
+int GetComboValue(int operand)
+{
+	switch (operand)
+	{
+		case 0:
+		case 1:
+		case 2:
+		case 3:
+			return operand;
+		case 4:
+			return regs[0];
+		case 5:
+			return regs[1];
+		case 6:
+			return regs[2];
+		default:
+			return 0;
+	}
+}
+
+
+int GetAForTest()
+{
+	int A = 0;
+
+	for (int i = prog.Length - 1; i >= 0; i--)
+	{
+		A += prog[i];
+		A = A << 3;
+	}
+
+	return A;
+}
+
+long GetAForInput()
+{
+	List<long> A = [0];
+
+	for (int i = prog.Length - 1; i >= 0; i--)
+	{
+		List<long> newA = [];
+		foreach (var a in A)
+		{
+			for (int k = 0; k <= 7; k++)
+			{
+				long na = (a * 8) + k;
+				if (ComputeSteps(na) == prog[i])
+					newA.Add(na);
+			}
+		}
+		A = newA;
+	}
+
+	return A.Min();
+}
+
+long ComputeSteps(long A)
+{
+	int B = (int)((A % 8) ^ 2);
+	return ((B ^ (A >> B)) ^ 3) % 8;
+}
