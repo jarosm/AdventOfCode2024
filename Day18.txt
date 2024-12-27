@@ -1,0 +1,83 @@
+﻿
+using System.Numerics;
+
+//int max = 6, toTake = 12; // test
+int max = 70, toTake = 1024; // input
+
+List<Vector2> coords = [];
+var dirs = new Vector2[] { new(0, 1), new(1, 0), new(0, -1), new(-1, 0) }; // S, E, N, W
+
+ParseInput();
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+void ParseInput()
+{
+	coords = File.ReadAllLines("input.txt").Select(x => { string[] c = x.Split(','); return new Vector2(int.Parse(c[0]), int.Parse(c[1])); }).ToList();
+}
+
+
+void Part1()
+{
+	Console.WriteLine($"Part 1: {FindPath(toTake).steps}");
+}
+
+
+void Part2()
+{
+	int tt = toTake;
+	var test = FindPath(tt);
+	while (test.steps > 0)
+	{
+		tt++;
+		while (!test.path.Contains(coords[tt - 1]))
+			tt++;
+		test = FindPath(tt);
+	}
+
+	Console.WriteLine($"Part 2: {coords[tt - 1]}");
+}
+
+
+(int steps, Vector2[] path) FindPath(int take)
+{
+	Queue<(Vector2 pos, int step, Vector2[] path)> queue = [];
+	HashSet<Vector2> visited = [];
+
+	queue.Enqueue((new Vector2(0, 0), 0, []));
+	while (queue.Count > 0)
+	{
+		var q = queue.Dequeue();
+
+		if (visited.Contains(q.pos))
+			continue;
+
+		var path = q.path.ToList();
+		path.Add(q.pos);
+
+		if (q.pos.X == max && q.pos.Y == max)
+			return (q.step, path.ToArray());
+
+		visited.Add(q.pos);
+
+		foreach (var dir in dirs)
+		{
+			var newPos = q.pos + dir;
+
+			if (newPos.X < 0 || newPos.X > max || newPos.Y < 0 || newPos.Y > max)
+				continue;
+			if (coords.Take(take).Contains(newPos))
+				continue;
+
+			queue.Enqueue((newPos, q.step + 1, path.ToArray()));
+		}
+	}
+
+	return (0, []);
+}
