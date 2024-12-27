@@ -1,0 +1,75 @@
+﻿
+using System.Runtime.InteropServices;
+
+Dictionary<int, string[]> patterns = [];
+string[] designs = [];
+
+ParseInput();
+
+
+Dictionary<string, long> founds = [];
+HashSet<string> notFounds = [];
+Dictionary<string, long> valids = [];
+
+foreach (var design in designs)
+{
+    long counts = GetValidCounts(design);
+	if (counts > 0)
+		valids.Add(design, counts);
+}
+
+Console.WriteLine($"Part 1: {valids.Count}");
+Console.WriteLine($"Part 2: {valids.Sum(x => x.Value)}");
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+void ParseInput()
+{
+	var input = File.ReadAllLines("input.txt");
+
+	patterns = input[0].Replace(" ", "").Split(',').GroupBy(x => x.Length).OrderByDescending(g => g.Key).ToDictionary(g => g.Key, g => g.ToArray());
+
+	designs = input.Skip(2).ToArray();
+}
+
+
+long GetValidCounts(string designPart)
+{
+	long count = 0;
+
+	if (founds.TryGetValue(designPart, out var c))
+		return c;
+	if (notFounds.Contains(designPart))
+		return 0;
+
+	foreach (var patternGroup in patterns)
+	{
+		foreach (var pattern in patternGroup.Value)
+		{
+			if (!designPart.StartsWith(pattern))
+				continue;
+
+			if (designPart.Length == pattern.Length)
+			{
+				founds.Add(designPart, 1);
+				count++;
+			}
+			else
+			{
+				long tc = GetValidCounts(designPart.Substring(pattern.Length));
+				if (founds.TryGetValue(designPart, out var lc))
+					founds[designPart] = lc + tc;
+				else
+					founds.Add(designPart, tc);
+				count += tc;
+			}
+		}
+	}
+
+	if (count == 0)
+		notFounds.Add(designPart);
+
+	return count;
+}
