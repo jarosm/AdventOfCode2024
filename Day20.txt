@@ -1,0 +1,156 @@
+﻿
+using System.Numerics;
+
+string[] map = [];
+int maxX = 0, maxY = 0;
+Vector2 start = new(0, 0);
+
+ParseInput();
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+void ParseInput()
+{
+	map = File.ReadAllLines("input.txt");
+
+	maxX = map[0].Length;
+	maxY = map.Length;
+	for (int i = 0; i < map.Length; i++)
+	{
+		if (map[i].Contains("S"))
+		{
+			start = new Vector2(map[i].IndexOf('S'), i);
+			map[i] = map[i].Replace("S", ".");
+		}
+		if (map[i].Contains("E"))
+		{
+			map[i] = map[i].Replace("E", ".");
+		}
+	}
+}
+
+
+void Part1()
+{
+	Dictionary<Vector2, int> path = [];
+	Dictionary<int, int> cheats = [];
+	var dirs = new Vector2[] { new(0, 1), new(1, 0), new(0, -1), new(-1, 0) }; // S, E, N, W
+	Queue<Vector2> queue = [];
+	queue.Enqueue(start);
+	int step = 0;
+	while (queue.Count > 0)
+	{
+		var p = queue.Dequeue();
+
+		path.Add(p, step);
+
+		// Find cheats
+		if (step > 0)
+		{
+			foreach (var dir in dirs)
+			{
+				var np = p + dir;
+				if (map[(int)np.Y][(int)np.X] != '#') // the first must be wall
+					continue;
+
+				np = np + dir;
+				if (np.X < 0 || np.X >= maxX || np.Y < 0 || np.Y >= maxY || map[(int)np.Y][(int)np.X] == '#') // the second must be free space
+					continue;
+
+				if (path.TryGetValue(np, out int v)) // we are looking for visited only
+				{
+					int saved = step - v - 2;
+					if (cheats.TryGetValue(saved, out int c))
+						cheats[saved]++;
+					else
+						cheats[saved] = 1;
+				}
+			}
+		}
+
+		// Find next step
+		foreach (var dir in dirs)
+		{
+			var np = p + dir;
+			if (np.X < 0 || np.X >= maxX || np.Y < 0 || np.Y >= maxY || map[(int)np.Y][(int)np.X] == '#' || path.ContainsKey(np))
+				continue;
+			queue.Enqueue(np);
+			step++;
+		}
+	}
+
+
+	Console.WriteLine($"Part 1: {cheats.Where(c => c.Key >= 100).Sum(c => c.Value)}");
+}
+
+
+void Part2()
+{
+	var dirs = new Vector2[] { new(0, 1), new(1, 0), new(0, -1), new(-1, 0) }; // S, E, N, W
+	Dictionary<Vector2, int> path = [];
+	Dictionary<int, int> cheats = [];
+	HashSet<(Vector2 p, Vector2 np)> seen = [];
+	Queue<Vector2> queue = [];
+	queue.Enqueue(start);
+	int step = 0;
+	while (queue.Count > 0)
+	{
+		var p = queue.Dequeue();
+
+		path.Add(p, step);
+
+		// Find cheats in manhattan distance 20
+		if (step > 0)
+		{
+			for (int j = -20; j <= 20; j++)
+			{
+				float npy = p.Y + j;
+				if (npy <= 0 || npy >= maxY - 1)
+					continue;
+
+				int maxI = 20 - Math.Abs(j);
+				for (int i = -maxI; i <= maxI; i++)
+				{
+					if (j == 0 && i == 0)
+						continue;
+
+					Vector2 np = new(p.X + i, npy);
+					if (np.X <= 0 || np.X >= maxX - 1)
+						continue;
+
+					if (map[(int)np.Y][(int)np.X] != '#' && !seen.Contains((p, np)) && path.TryGetValue(np, out int v)) // on path, not seen combination and visited only
+					{
+						int dist = (int)Math.Abs(np.X - p.X) + (int)Math.Abs(np.Y - p.Y); // manhattan distance
+
+						seen.Add((p, np));
+
+						int saved = step - v - dist;
+						if (cheats.TryGetValue(saved, out int c))
+							cheats[saved]++;
+						else
+							cheats[saved] = 1;
+					}
+				}
+			}
+		}
+
+		// Find next step
+		foreach (var dir in dirs)
+		{
+			var np = p + dir;
+			if (np.X < 0 || np.X >= maxX || np.Y < 0 || np.Y >= maxY || map[(int)np.Y][(int)np.X] == '#' || path.ContainsKey(np))
+				continue;
+			queue.Enqueue(np);
+			step++;
+		}
+	}
+
+
+	Console.WriteLine($"Part 2: {cheats.Where(c => c.Key >= 100).Sum(c => c.Value)}");
+}
