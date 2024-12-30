@@ -1,0 +1,98 @@
+﻿
+Dictionary<string, int> orderedNodes = [];
+Dictionary<int, string> orderedNodesKeyIndex = [];
+bool[,] map;
+
+ParseInput();
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+void ParseInput()
+{
+	var input = File.ReadAllLines("input.txt");
+
+	orderedNodes = string.Join("-", input).Split('-').Distinct().OrderBy(x => x).Select((x, i) => new { x, i }).ToDictionary(pair => pair.x, pair => pair.i);
+	orderedNodesKeyIndex = string.Join("-", input).Split('-').Distinct().OrderBy(x => x).Select((x, i) => new { x, i }).ToDictionary(pair => pair.i, pair => pair.x);
+
+	map = new bool[orderedNodes.Count, orderedNodes.Count];
+
+	foreach (var line in input)
+	{
+		var t = line.Split('-');
+		int index1 = orderedNodes[t[0]];
+		int index2 = orderedNodes[t[1]];
+		map[index1, index2] = true;
+		map[index2, index1] = true;
+	}
+}
+
+
+void Part1()
+{
+	List<int[]> connections = [];
+
+	for (int i = 0; i < orderedNodes.Count; i++)
+	{
+		for (int j = i + 1; j < orderedNodes.Count; j++)
+		{
+			if (map[i, j])
+			{
+				for (int k = j + 1; k < orderedNodes.Count; k++)
+				{
+					if (map[i, k] && map[j, k])
+						connections.Add([i, j, k]);
+				}
+			}
+		}
+	}
+
+	int[] ts = orderedNodes.Where(x => x.Key[0] == 't').Select(x => x.Value).ToArray();
+	connections = connections.Where(x => x.Intersect(ts).Any()).ToList();
+
+	Console.WriteLine($"Part 1: {connections.Count}");
+}
+
+
+void Part2()
+{
+	List<int[]> neighbors = [];
+
+	for (int i = 0; i < orderedNodes.Count; i++)
+	{
+		List<int> n = [];
+		for (int j = 0; j < orderedNodes.Count; j++)
+		{
+			if (map[i, j])
+			{
+				n.Add(j);
+			}
+		}
+		neighbors.Add([.. n]);
+	}
+
+	List<int[]> cliques = [];
+	BronKerbosch([], [.. orderedNodes.Values], []);
+
+	Console.WriteLine($"Part 2: {string.Join(",", cliques.Where(x => x.Length == cliques.Max(i => i.Length)).First().Select(x => orderedNodesKeyIndex[x]))}");
+
+	void BronKerbosch(int[] R, int[] P, int[] X)
+	{
+		if (P.Length == 0 && X.Length == 0)
+			cliques.Add(R);
+
+		while (P.Length > 0)
+		{
+			var v = P[0];
+			BronKerbosch([.. R, v], P.Intersect(neighbors[v]).ToArray(), X.Intersect(neighbors[v]).ToArray());
+
+			P = P.Where(x => x != v).ToArray();
+			X = X.Intersect([v]).ToArray();
+		}
+	}
+}
