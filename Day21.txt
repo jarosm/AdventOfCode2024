@@ -1,0 +1,152 @@
+﻿
+using System.Numerics;
+
+string[] numbers = [];
+
+Dictionary<char, Vector2> numKeypad = new() { 
+	{ '7', new(0, 0) }, { '8', new(1, 0) }, { '9', new(2, 0) }, 
+	{ '4', new(0, 1) }, { '5', new(1, 1) }, { '6', new(2, 1) }, 
+	{ '1', new(0, 2) }, { '2', new(1, 2) }, { '3', new(2, 2) }, 
+						{ '0', new(1, 3) }, { 'A', new(2, 3) }
+};
+
+Dictionary<(char, char), string> dirKeypad = new() {
+	{ ('A', 'A'), "A" },
+	{ ('A', '^'), "<A" },
+	{ ('A', '>'), "vA" },
+	{ ('A', 'v'), "<vA" },
+	{ ('A', '<'), "v<<A" },
+	{ ('^', '^'), "A" },
+	{ ('^', 'A'), ">A" },
+	{ ('^', '>'), "v>A" },
+	{ ('^', 'v'), "vA" },
+	{ ('^', '<'), "v<A" },
+	{ ('v', 'v'), "A" },
+	{ ('v', 'A'), "^>A" },
+	{ ('v', '>'), ">A" },
+	{ ('v', '<'), "<A" },
+	{ ('v', '^'), "^A" },
+	{ ('>', '>'), "A" },
+	{ ('>', 'A'), "^A" },
+	{ ('>', '^'), "<^A" },
+	{ ('>', 'v'), "<A" },
+	{ ('>', '<'), "<<A" },
+	{ ('<', '<'), "A" },
+	{ ('<', 'A'), ">>^A" },
+	{ ('<', '^'), ">^A" },
+	{ ('<', 'v'), ">A" },
+	{ ('<', '>'), ">>A" }
+};
+
+Dictionary<(char from, char to, int level), long> cache = [];
+
+
+ParseInput();
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+void ParseInput()
+{
+	numbers = File.ReadAllLines("input.txt");
+}
+
+
+void Part1()
+{
+	cache = [];
+	Console.WriteLine($"Part 1: {ParseNumbers(2)}");
+}
+
+
+void Part2()
+{
+	cache = [];
+	Console.WriteLine($"Part 2: {ParseNumbers(25)}");
+}
+
+
+long ParseNumbers(int level)
+{
+	long complexities = 0;
+
+	for (int j = 0; j < numbers.Length; j++)
+	{
+		long len = 0;
+
+		char prev = 'A';
+		for (int i = 0; i < numbers[j].Length; i++)
+		{
+			string seq = numKeypadSequence(prev, numbers[j][i]);
+			len += ParseDirs(seq, 0, level);
+			prev = numbers[j][i];
+		}
+
+		complexities += len * long.Parse(numbers[j].Substring(0, 3));
+	}
+
+	return complexities;
+}
+
+
+string numKeypadSequence(char from, char to)
+{
+	string sequence = "";
+
+	var vf = numKeypad[from];
+	var vt = numKeypad[to];
+
+	if (vf.Y == 3 && vt.X == 0) // mind the gap
+	{
+		sequence += vt.Y == 2 ? "^" : vt.Y == 1 ? "^^" : "^^^";
+		sequence += vt.X - vf.X == -2 ? "<<" : "<";
+	}
+	else if (vf.X == 0 && vt.Y == 3) // mind the gap for the second time
+	{
+		sequence += vt.X - vf.X == 2 ? ">>" : ">";
+		sequence += vf.Y == 2 ? "v" : vf.Y == 1 ? "vv" : "vvv";
+	}
+    else if (vf.X >= vt.X) // left first
+    {
+		sequence += vt.X - vf.X == -2 ? "<<" : vt.X - vf.X == -1 ? "<" : "";
+		sequence += vt.Y - vf.Y == -3 ? "^^^" : vt.Y - vf.Y == -2 ? "^^" : vt.Y - vf.Y == -1 ? "^" : vt.Y - vf.Y == 0 ? "" : vt.Y - vf.Y == 1 ? "v" : vt.Y - vf.Y == 2 ? "vv" : "vvv";
+	}
+	else // up/down first
+	{
+		sequence += vt.Y - vf.Y == -3 ? "^^^" : vt.Y - vf.Y == -2 ? "^^" : vt.Y - vf.Y == -1 ? "^" : vt.Y - vf.Y == 0 ? "" : vt.Y - vf.Y == 1 ? "v" : vt.Y - vf.Y == 2 ? "vv" : "vvv";
+		sequence += vt.X - vf.X == 2 ? ">>" : vt.X - vf.X == 1 ? ">" : "";
+	}
+
+    return sequence + "A";
+}
+
+
+long ParseDirs(string sequence, int currentLevel, int maxLevel)
+{
+	long len = 0;
+
+    if (currentLevel >= maxLevel)
+		return sequence.Length;
+
+	char prev = 'A';
+	for (int i = 0; i < sequence.Length; i++)
+	{
+		if (cache.TryGetValue((prev, sequence[i], currentLevel), out long val))
+			len += val;
+		else
+		{
+			long v = ParseDirs(dirKeypad[(prev, sequence[i])], currentLevel + 1, maxLevel);
+			cache[(prev, sequence[i], currentLevel)] = v;
+			len += v;
+		}
+
+		prev = sequence[i];
+	}
+
+	return len;
+}
