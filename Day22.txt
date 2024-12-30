@@ -1,0 +1,58 @@
+﻿
+Dictionary<(long, long, long, long), long> globalChanges = [];
+
+var input = ParseInput();
+
+for (int i = 0; i < input.Length; i++)
+{
+	Dictionary<(long, long, long, long), long> changes = [];
+
+	List<long> window = [];
+	long price = input[i] % 10;
+
+	for (int j = 0; j < 2000; j++)
+	{
+		var newSecret = CalculateSecret(input[i]);
+		long newPrice = newSecret % 10;
+
+		window.Add(newPrice - price);
+		if (window.Count == 4)
+		{
+			if (!changes.ContainsKey((window[0], window[1], window[2], window[3])))
+				changes[(window[0], window[1], window[2], window[3])] = newPrice;
+			window.RemoveAt(0);
+		}
+		price = newPrice;
+
+		input[i] = newSecret;
+	}
+
+	foreach (var change in changes)
+	{
+		if (globalChanges.ContainsKey(change.Key))
+			globalChanges[change.Key] += change.Value;
+		else
+			globalChanges[change.Key] = change.Value;
+	}
+}
+
+Console.WriteLine($"Part 1: {input.Sum()}");
+Console.WriteLine($"Part 2: {globalChanges.Max(c => c.Value)}");
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+long[] ParseInput()
+{
+	return File.ReadAllLines("input.txt").Select(long.Parse).ToArray();
+}
+
+
+long CalculateSecret(long secret)
+{
+	long newSecret = ((secret * 64) ^ secret) % 16777216;
+	newSecret = ((newSecret / 32) ^ newSecret) % 16777216;
+	newSecret = ((newSecret * 2048) ^ newSecret) % 16777216;
+	return newSecret;
+}
