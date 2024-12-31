@@ -1,0 +1,160 @@
+﻿
+Dictionary<string, string> inputValues = [];
+Dictionary<string, string[]> operations = [];
+
+ParseInput();
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+void ParseInput()
+{
+	var input = File.ReadAllLines("input.txt");
+
+	inputValues = input.Where(x => x.Contains(':')).Select(x => x.Replace(" ", "").Split(':')).ToDictionary(x => x[0], x => x[1]);
+	operations = input.Where(x => x.Contains('-')).Select(x => x.Replace(" -> ", ";").Replace(" ", ";").Split(';')).ToDictionary(x => x[3], x => new string[] { x[0], x[1], x[2] });
+}
+
+
+void Part1()
+{
+	string result = "";
+	var zout = operations.Where(x => x.Key.StartsWith("z")).OrderByDescending(x => int.Parse(x.Key.Substring(1)));
+	foreach (var z in zout)
+		result += GetOperationResult(z.Key);
+
+	Console.WriteLine($"Part 1: {Convert.ToInt64(result, 2)}");
+}
+
+
+void Part2()
+{
+	List<string> errors = [];
+
+	foreach (var op in operations)
+	{
+		if (!CheckOperation(op.Key, op.Value))
+			errors.Add(op.Key);
+	}
+
+	Console.WriteLine($"Part 2: {string.Join(",", errors.Distinct().OrderBy(x => x))}");
+}
+
+
+string GetOperationResult(string wire)
+{
+	string result = "0";
+
+	if (wire[0] == 'x' || wire[0] == 'y')
+		return inputValues[wire];
+
+	var op = operations[wire];
+	string val1 = GetOperationResult(op[0]);
+	string val2 = GetOperationResult(op[2]);
+
+	switch (op[1])
+	{
+		case "AND":
+			if (val1 == "1" && val2 == "1")
+				return "1";
+			else
+				return "0";
+
+		case "OR":
+			if (val1 == "0" && val2 == "0")
+				return "0";
+			else
+				return "1";
+
+		case "XOR":
+			if (val1 == val2)
+				return "0";
+			else
+				return "1";
+	}
+
+	return result;
+}
+
+
+//inp = input(xXX or yXX)
+//out = output(zXX)
+//int = intermediate(not x,y,z wires)
+
+//XOR rules:
+//    int XOR int = out
+//    inp XOR inp = int   -> must go through AND and/or XOR gates
+
+//OR rules:
+//    int OR int = int    -> must go through both AND and XOR
+
+//AND rules:
+//    inp AND inp = int   -> must go through OR gate
+//    int AND int = int   -> must go through OR gate
+
+//Special case for LOWEST bit:
+//    x00 XOR y00 = z00
+
+//Special case for HIGHEST bit:
+//    int OR int = zXX    -> XX is however many bits are in the output
+bool CheckOperation(string output, string[] input)
+{
+	if (output == "z45")
+	{
+		if (input[0][0] == 'x' || input[0][0] == 'y' || input[2][0] == 'x' || input[2][0] == 'y' || input[1] != "OR")
+			return false;
+		return true;
+	}
+
+	if (output == "z00")
+	{
+		if (input[1] != "XOR")
+			return false;
+		if (!(input[0] == "x00" && input[2] == "y00") && !(input[2] == "x00" && input[0] == "y00"))
+			return false;
+		return true;
+	}
+
+	if (input[0] == "x00" || input[0] == "y00" || input[2] == "x00" || input[2] == "y00")
+	{
+		if ((input[0][0] == 'x' && input[2][0] == 'y') || (input[2][0] == 'x' && input[0][0] == 'y'))
+		{
+			if (input[1] != "XOR" && input[1] != "AND")
+				return false;
+		}
+		return true;
+	}
+
+	if (input[1] == "XOR")
+	{
+		if (input[0][0] == 'x' || input[0][0] == 'y')
+		{
+			if (input[2][0] != 'x' && input[2][0] != 'y') return false;
+			if (output[0] == 'z') return false;
+			if (!operations.Where(x => (x.Value[0] == output || x.Value[2] == output) && (x.Value[1] == "AND" || x.Value[1] == "XOR")).Any()) return false;
+		}
+		else if (output[0] != 'z') return false;
+	}
+	else if (input[1] == "OR")
+	{
+		if (input[0][0] == 'x' || input[0][0] == 'y' || input[2][0] == 'x' || input[2][0] == 'y' || output[0] == 'z') return false;
+		if (!operations.Where(x => (x.Value[0] == output || x.Value[2] == output) && x.Value[1] == "AND").Any()
+			|| !operations.Where(x => (x.Value[0] == output || x.Value[2] == output) && x.Value[1] == "XOR").Any())
+			return false;
+	}
+	else // AND
+	{
+		if (input[0][0] == 'x' || input[0][0] == 'y')
+		{
+			if (input[2][0] != 'x' && input[2][0] != 'y') return false;
+		}
+		if (!operations.Where(x => (x.Value[0] == output || x.Value[2] == output) && x.Value[1] == "OR").Any()) return false;
+	}
+
+	return true;
+}
